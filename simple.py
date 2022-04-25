@@ -8,7 +8,7 @@ def simple(basket, prices, epsilon, T):
     for i in range(len(prices)):
         returns[i] = [prices[i][j+1]/prices[i][j] for j in range(len(prices[i]) - 1)]
         
-    for t in range(T): # change to range(T) + 1?
+    for t in range(2, T):
         last_period_returns = []
         for i in range(len(prices)):
             last_period_returns[i] = returns[i][t - 1]
