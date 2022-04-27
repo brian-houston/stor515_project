@@ -15,11 +15,11 @@ def ts(basket, prices, risk_free, epsilon, T):
     beta = [1 for p in prices]
         
     for t in range(T):
-        portfolio_return = 0
+        portfolio_return = [0 for p in prices]
         for p in range(len(prices)):
-            portfolio_return += weights[p] * returns[p][t]
+            portfolio_return[p] = weights[p] * returns[p][t]
                
-        sharpe_ratio = (portfolio_return - risk_free[t]) / statistics.stdev(portfolio_return)
+        sharpe_ratio = (np.sum(portfolio_return) - risk_free[t]) / statistics.stdev(portfolio_return)
             
         for p in range(len(prices)):
             phat[p] = np.random.beta(alpha[p], beta[p])
@@ -30,11 +30,11 @@ def ts(basket, prices, risk_free, epsilon, T):
             
         weights = epsilon * one_stock_weights + (1 - epsilon) * weights
             
-        new_portfolio_return = 0
+        new_portfolio_return = [0 for p in prices]
         for p in range(len(prices)):
-            new_portfolio_return += weights[p] * returns[p][t]
+            new_portfolio_return[p] = weights[p] * returns[p][t]
             
-        new_sharpe_ratio = (new_portfolio_return - risk_free[t]) / statistics.stdev(new_portfolio_return)
+        new_sharpe_ratio = (np.sum(new_portfolio_return) - risk_free[t]) / statistics.stdev(new_portfolio_return)
             
         if new_sharpe_ratio > sharpe_ratio:
             alpha[chosen_stock] += 1
