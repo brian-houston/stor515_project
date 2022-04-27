@@ -35,12 +35,9 @@ def minimum_spanning_tree(X, copy_X=True):
 	return np.vstack(spanning_edges)
 
 
-#Reading in/cleaning data
-data = pd.read_csv('sandbox/combined_stock_data.csv', header=0, index_col=0)
-data = data.drop(columns = ["KGNR", "FRMC"])
-data = data.drop(["04-04-2022"])
 
-#Running correlation/setting up graph
+data = pd.read_csv('sandbox/combined_stock_data.csv', header=0, index_col=0)
+
 corr = data.corr()
 
 corr_filter = nx.Graph()
@@ -49,7 +46,6 @@ for i in range(len(corr)-1):
 		if abs(corr.iloc[i,j]) > 0.6:
 			corr_filter.add_edge(corr.columns.values[i], corr.columns.values[j])
 
-#Running min span tree			
 dist = np.sqrt(2*(1- corr))
 
 dist = np.array(dist)
@@ -63,7 +59,6 @@ mst = nx.Graph()
 for i, j in edge_list:
 	mst.add_edge(i,j)
 
-#Calculating peripheral edges
 g = mst
 d = nx.degree(g)
 b_c = nx.betweenness_centrality(g)
@@ -98,16 +93,24 @@ for n in g.nodes():
 	D_d[n] = nx.shortest_path_length(g, n, c3)
 
 
+
 d = {node:val for (node, val) in g.degree()}
+
 nodes_stats = pd.DataFrame.from_dict(d, orient='index')
 nodes_stats.rename(columns={0:'Degree'}, inplace=True)
+nodes_stats['Betweenness'] = b_c.values()
+nodes_stats['Centrality'] = .5*(nodes_stats['Degree'] + nodes_stats['Betweenness'])
 nodes_stats['Ddegree'] = D_dg.values()
 nodes_stats['Dcorr'] = D_c.values()
 nodes_stats['Ddis'] = D_d.values()
 nodes_stats['Distance'] = (nodes_stats['Ddegree'] + nodes_stats['Dcorr'] + nodes_stats['Ddis'])/3
 nodes_stats.head()
 
-#Final peripheral portfolio
 p = nodes_stats.sort_values(by='Distance', ascending = False).head(25)
 portfolio_p = [name for name in p.index.values]
 print(portfolio_p)
+
+
+c = nodes_stats.sort_values(by='Centrality', ascending = False).head(25)
+portfolio_c = [name for name in c.index.values]
+print(portfolio_c)
