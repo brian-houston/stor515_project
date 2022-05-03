@@ -1,44 +1,48 @@
 import numpy as np
-import statistics
 
-def ts(basket, prices, risk_free, epsilon, T):
-    rng = np.random.default_rng(0)
+def ts(prices, window_size, epsilon):
+    K = len(prices)
+    T = len(prices[0]) - 1
+
+    weights = np.array([1/len(prices) for _ in range(K)])
+    weights_history = [list(weights)]
+
+    total_return = 0 
+    total_return_history = [total_return]
+
+    log_rates = [[] for _ in range(K)]
     
-    weights = np.array([1/len(prices) for p in prices])
-    returns = [[] for p in prices]
-    
-    for i in range(len(prices)):
-        returns[i] = [prices[i][j+1]/prices[i][j] for j in range(len(prices[i]) - 1)]
+    for i in range(K):
+        log_rates[i] = [np.log(prices[i][t+1]/prices[i][t]) for t in range(T)]
         
-    phat = [0 for p in prices]
-    alpha = [1 for p in prices]
-    beta = [1 for p in prices]
-        
+    phat = [0 for _ in range(K)]
+    alpha = [1 for _ in range(K)]
+    beta = [1 for _ in range(K)]
+    stock_returns = [0 for _ in range(K)]
+
     for t in range(T):
-        portfolio_return = [0 for p in prices]
-        for p in range(len(prices)):
-            portfolio_return[p] = weights[p] * returns[p][t]
-               
-        sharpe_ratio = (np.sum(portfolio_return) - risk_free[t]) / statistics.stdev(portfolio_return)
-            
-        for p in range(len(prices)):
-            phat[p] = np.random.beta(alpha[p], beta[p])
+        for i in range(K):
+            total_return += log_rates[i][t] * weights[i]
+            phat[i] = np.random.beta(alpha[i], beta[i])
+            stock_returns[i] = np.mean(log_rates[i][max(0, t - window_size):(t+1)])
+
         chosen_stock = np.argmax(phat)
+
+        portfolio_return = np.sum(stock_returns * weights)
             
-        one_stock_weights = np.array([0 for w in weights])
+        one_stock_weights = np.array([0 for _ in range(K)])
         one_stock_weights[chosen_stock] = 1
             
         weights = epsilon * one_stock_weights + (1 - epsilon) * weights
             
-        new_portfolio_return = [0 for p in prices]
-        for p in range(len(prices)):
-            new_portfolio_return[p] = weights[p] * returns[p][t]
+        new_portfolio_return = np.sum(stock_returns * weights)
             
-        new_sharpe_ratio = (np.sum(new_portfolio_return) - risk_free[t]) / statistics.stdev(new_portfolio_return)
-            
-        if new_sharpe_ratio > sharpe_ratio:
+        if new_portfolio_return > portfolio_return:
             alpha[chosen_stock] += 1
         else:
             beta[chosen_stock] += 1
-                
-    return weights
+
+        weights_history.append(list(weights))
+        total_return_history.append(total_return)
+
+    return [weights_history, total_return_history]
